@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Multi-Link Toe Kinematics Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(22, 30, 46, 0.85);
+            --card-border: #1e2d4a;
+            --accent-cyan: #00f0ff;
+            --accent-orange: #ff9900;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --text-main: #e1e7ed;
+            --text-muted: #8a99ad;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            letter-spacing: 1.5px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1000px;
+            gap: 20px;
+        }
+
+        /* Top Viewport: Car Visualization */
+        .viewport-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .car-svg-container {
+            width: 100%;
+            max-width: 650px;
+            height: auto;
+            position: relative;
+        }
+
+        /* Overlay Wheel HUD Cards */
+        .wheel-hud {
+            position: absolute;
+            background: rgba(10, 15, 26, 0.9);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.15);
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .wheel-hud .title {
+            font-weight: bold;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 3px;
+            margin-bottom: 4px;
+        }
+
+        .wheel-hud .val {
+            color: var(--accent-cyan);
+            font-size: 1.0rem;
+            font-weight: bold;
+        }
+
+        .wheel-hud .state {
+            font-size: 0.7rem;
+            color: var(--accent-green);
+            margin-top: 2px;
+        }
+
+        /* Positioning HUD cards */
+        #hud-fl { top: 12%; left: 4%; }
+        #hud-fr { top: 12%; right: 4%; }
+        #hud-rl { bottom: 12%; left: 4%; }
+        #hud-rr { bottom: 12%; right: 4%; }
+
+        /* Control Panel */
+        .control-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-group label span.val-badge {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 6px;
+            background: #1a263d;
+            border-radius: 3px;
+            outline: none;
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            background: #121a2b;
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            outline: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        select:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .desc-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* System Diagnostics Log */
+        .telemetry-card {
+            grid-column: 1 / -1;
+            background: #070a12;
+            border: 1px solid #162238;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #a0aec0;
+        }
+
+        .telemetry-card .highlight {
+            color: var(--accent-cyan);
+            font-weight: bold;
+        }
+
+        .telemetry-card .alert {
+            color: var(--accent-orange);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Active Toe Kinematics Simulator</h1>
+        <p>Real-Time Dynamic Multi-Link Wheel Geometry Control System</p>
+    </div>
+
+    <div class="main-container">
+        <div class="viewport-card">
+            <div class="wheel-hud" id="hud-fl">
+                <div class="title">FRONT LEFT (FL)</div>
+                <div class="val" id="val-fl">0.00°</div>
+                <div class="state" id="state-fl">NEUTRAL</div>
+            </div>
+            <div class="wheel-hud" id="hud-fr">
+                <div class="title">FRONT RIGHT (FR)</div>
+                <div class="val" id="val-fr">0.00°</div>
+                <div class="state" id="state-fr">NEUTRAL</div>
+            </div>
+            <div class="wheel-hud" id="hud-rl">
+                <div class="title">REAR LEFT (RL)</div>
+                <div class="val" id="val-rl">0.00°</div>
+                <div class="state" id="state-rl">NEUTRAL</div>
+            </div>
+            <div class="wheel-hud" id="hud-rr">
+                <div class="title">REAR RIGHT (RR)</div>
+                <div class="val" id="val-rr">0.00°</div>
+                <div class="state" id="state-rr">NEUTRAL</div>
+            </div>
+
+            <div class="car-svg-container">
+                <svg viewBox="0 0 600 800" width="100%" height="100%">
+                    <defs>
+                        <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                        <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+
+                    <g stroke="#162238" stroke-width="1" stroke-dasharray="4 4">
+                        <line x1="300" y1="20" x2="300" y2="780" stroke="#00f0ff" stroke-opacity="0.3" stroke-width="1.5" stroke-dasharray="none" />
+                        <line x1="20" y1="200" x2="580" y2="200" />
+                        <line x1="20" y1="600" x2="580" y2="600" />
+                        <circle cx="300" cy="400" r="100" />
+                    </g>
+
+                    <g stroke="#2a3b5c" stroke-width="6" stroke-linecap="round">
+                        <line x1="160" y1="200" x2="440" y2="200" />
+                        <line x1="160" y1="600" x2="440" y2="600" />
+                        <line x1="300" y1="200" x2="300" y2="600" stroke-width="8" />
+                    </g>
+
+                    <g stroke="#00f0ff" stroke-width="3" opacity="0.8">
+                        <line x1="200" y1="185" x2="160" y2="185" id="act-fl-1" />
+                        <line x1="200" y1="215" x2="160" y2="215" id="act-fl-2" />
+                        <line x1="400" y1="185" x2="440" y2="185" id="act-fr-1" />
+                        <line x1="400" y1="215" x2="440" y2="215" id="act-fr-2" />
+                        <line x1="200" y1="585" x2="160" y2="585" id="act-rl-1" />
+                        <line x1="200" y1="615" x2="160" y2="615" id="act-rl-2" />
+                        <line x1="400" y1="585" x2="440" y2="585" id="act-rr-1" />
+                        <line x1="400" y1="615" x2="440" y2="615" id="act-rr-2" />
+                    </g>
+
+                    <g fill="none" stroke="#2c3e60" stroke-width="2.5">
+                        <path d="M 230 70 
+                                 C 270 60, 330 60, 370 70 
+                                 C 410 110, 435 180, 440 260 
+                                 C 455 350, 455 450, 440 540 
+                                 C 435 620, 410 690, 370 730 
+                                 C 330 740, 270 740, 230 730 
+                                 C 190 690, 165 620, 160 540 
+                                 C 145 450, 145 350, 160 260 
+                                 C 165 180, 190 110, 230 70 Z" 
+                              fill="rgba(15, 23, 42, 0.65)" stroke="#00f0ff" stroke-opacity="0.4" stroke-width="2" />
+
+                        <path d="M 220 250 Q 300 230 380 250 L 360 480 Q 300 495 240 480 Z" fill="rgba(0, 240, 255, 0.05)" stroke="#00f0ff" stroke-opacity="0.3" />
+                        
+                        <path d="M 155 270 L 120 285 L 125 300 L 158 290 Z" fill="#1e2d4a" />
+                        <path d="M 445 270 L 480 285 L 475 300 L 442 290 Z" fill="#1e2d4a" />
+
+                        <circle cx="255" cy="310" r="18" fill="none" stroke="#4a5a80" stroke-width="3" />
+                        <rect x="235" y="340" width="40" height="50" rx="8" fill="rgba(255,255,255,0.03)" stroke="#2c3e60" />
+                        <rect x="325" y="340" width="40" height="50" rx="8" fill="rgba(255,255,255,0.03)" stroke="#2c3e60" />
+
+                        <path d="M 180 85 L 220 75" stroke="#00f0ff" stroke-width="5" filter="url(#glow-cyan)" stroke-linecap="round" />
+                        <path d="M 420 85 L 380 75" stroke="#00f0ff" stroke-width="5" filter="url(#glow-cyan)" stroke-linecap="round" />
+                        <path d="M 190 720 L 230 725" stroke="#ff3366" stroke-width="5" filter="url(#glow-red)" stroke-linecap="round" />
+                        <path d="M 410 720 L 370 725" stroke="#ff3366" stroke-width="5" filter="url(#glow-red)" stroke-linecap="round" />
+                    </g>
+
+                    <g id="wheel-fl">
+                        <rect x="138" y="150" width="44" height="100" rx="10" fill="#111827" stroke="#374151" stroke-width="2" />
+                        <rect x="148" y="165" width="24" height="70" rx="4" fill="#1f2937" stroke="#00f0ff" stroke-width="1.5" />
+                        <line x1="160" y1="130" x2="160" y2="270" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
+                        <polygon points="160,125 154,135 166,135" fill="#00f0ff" />
+                    </g>
+
+                    <g id="wheel-fr">
+                        <rect x="418" y="150" width="44" height="100" rx="10" fill="#111827" stroke="#374151" stroke-width="2" />
+                        <rect x="428" y="165" width="24" height="70" rx="4" fill="#1f2937" stroke="#00f0ff" stroke-width="1.5" />
+                        <line x1="440" y1="130" x2="440" y2="270" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
+                        <polygon points="440,125 434,135 446,135" fill="#00f0ff" />
+                    </g>
+
+                    <g id="wheel-rl">
+                        <rect x="138" y="550" width="44" height="100" rx="10" fill="#111827" stroke="#374151" stroke-width="2" />
+                        <rect x="148" y="565" width="24" height="70" rx="4" fill="#1f2937" stroke="#00f0ff" stroke-width="1.5" />
+                        <line x1="160" y1="530" x2="160" y2="670" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
+                        <polygon points="160,525 154,535 166,535" fill="#00f0ff" />
+                    </g>
+
+                    <g id="wheel-rr">
+                        <rect x="418" y="550" width="44" height="100" rx="10" fill="#111827" stroke="#374151" stroke-width="2" />
+                        <rect x="428" y="565" width="24" height="70" rx="4" fill="#1f2937" stroke="#00f0ff" stroke-width="1.5" />
+                        <line x1="440" y1="530" x2="440" y2="670" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
+                        <polygon points="440,525 434,535 446,535" fill="#00f0ff" />
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label>VEHICLE SPEED: <span class="val-badge" id="disp-speed">60 km/h</span></label>
+                <input type="range" id="input-speed" min="0" max="250" value="60">
+                <div class="desc-text">Higher speeds trigger active Toe-In for straight-line stability.</div>
+            </div>
+
+            <div class="control-group">
+                <label>STEERING INPUT: <span class="val-badge" id="disp-steer">0.0°</span></label>
+                <input type="range" id="input-steer" min="-35" max="35" value="0" step="0.5">
+                <div class="desc-text">Negative = Left turn, Positive = Right turn. Triggers Ackermann & Rear-Steer geometry.</div>
+            </div>
+
+            <div class="control-group">
+                <label>BRAKE FORCE: <span class="val-badge" id="disp-brake">0 %</span></label>
+                <input type="range" id="input-brake" min="0" max="100" value="0">
+                <div class="desc-text">Heavy braking extends multi-link actuators to add stabilizing rear Toe-In.</div>
+            </div>
+
+            <div class="control-group">
+                <label>ACTIVE CHASSIS MODE</label>
+                <select id="input-mode">
+                    <option value="comfort">Comfort / City Cruise (Agile Turning)</option>
+                    <option value="sport" selected>Sport / Track (Dynamic Geometry)</option>
+                    <option value="autobahn">Autobahn / High-Speed Stability</option>
+                </select>
+                <div class="desc-text">Adjusts active rear-wheel steering phase and multi-link reaction speed.</div>
+            </div>
+
+            <div class="telemetry-card" id="telemetry-log">
+                Initializing ECU Kinematics Control Module...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const inputSpeed = document.getElementById('input-speed');
+        const inputSteer = document.getElementById('input-steer');
+        const inputBrake = document.getElementById('input-brake');
+        const inputMode = document.getElementById('input-mode');
+
+        const dispSpeed = document.getElementById('disp-speed');
+        const dispSteer = document.getElementById('disp-steer');
+        const dispBrake = document.getElementById('disp-brake');
+
+        // Wheel Elements
+        const wheelFL = document.getElementById('wheel-fl');
+        const wheelFR = document.getElementById('wheel-fr');
+        const wheelRL = document.getElementById('wheel-rl');
+        const wheelRR = document.getElementById('wheel-rr');
+
+        // HUD Elements
+        const valFL = document.getElementById('val-fl');
+        const valFR = document.getElementById('val-fr');
+        const valRL = document.getElementById('val-rl');
+        const valRR = document.getElementById('val-rr');
+
+        const stateFL = document.getElementById('state-fl');
+        const stateFR = document.getElementById('state-fr');
+        const stateRL = document.getElementById('state-rl');
+        const stateRR = document.getElementById('state-rr');
+
+        const telemetryLog = document.getElementById('telemetry-log');
+
+        // Visual Multiplier so small degree changes are visually clear on screen
+        const VISUAL_MULTIPLIER = 1.8;
+
+        function updateKinematics() {
+            const speed = parseFloat(inputSpeed.value);
+            const steer = parseFloat(inputSteer.value);
+            const brake = parseFloat(inputBrake.value);
+            const mode = inputMode.value;
+
+            // Update Labels
+            dispSpeed.innerText = `${speed} km/h`;
+            dispSteer.innerText = `${steer > 0 ? '+' : ''}${steer.toFixed(1)}°`;
+            dispBrake.innerText = `${brake} %`;
+
+            // 1. Calculate Base Speed-Dependent Toe
+            // At high speed, front and rear pull slightly inward (Toe-In) for straight-line stability.
+            let speedToeFront = (speed / 250) * 0.6; // Up to +0.6 deg Toe-In
+            let speedToeRear = (speed / 250) * 1.2;  // Up to +1.2 deg Toe-In
+
+            // 2. Braking Compensation (Multi-link active pull)
+            let brakeToeRear = (brake / 100) * 1.8;  // Adds extra rear Toe-In under hard braking
+
+            // 3. Front Wheel Steering Angle & Ackermann Geometry
+            let angleFL = 0;
+            let angleFR = 0;
+
+            if (steer < 0) { // Turning Left
+                // Inner wheel (FL) turns more than outer wheel (FR)
+                angleFL = steer * 1.15 - speedToeFront;
+                angleFR = steer * 0.88 + speedToeFront;
+            } else if (steer > 0) { // Turning Right
+                // Inner wheel (FR) turns more than outer wheel (FL)
+                angleFL = steer * 0.88 - speedToeFront;
+                angleFR = steer * 1.15 + speedToeFront;
+            } else { // Straight line
+                angleFL = -speedToeFront; // Left wheel turned slightly right (Toe-In)
+                angleFR = speedToeFront;  // Right wheel turned slightly left (Toe-In)
+            }
+
+            // 4. Rear Wheel Active Control (Counter-Phase vs In-Phase Rear Steering)
+            let rearSteerRatio = 0;
+            let systemPhaseText = "Neutral Alignment";
+
+            if (speed < 50) {
+                // Low speed: Counter-Phase steering (Rear turns opposite to Front) for tight turning circle
+                rearSteerRatio = -0.25 * (1 - speed / 50);
+                if (Math.abs(steer) > 2) systemPhaseText = "Counter-Phase Active Rear Steering (High Agility)";
+            } else if (speed > 80) {
+                // High speed: In-Phase steering (Rear turns same direction as Front) for stability
+                let speedFactor = mode === 'sport' ? 0.25 : 0.18;
+                rearSteerRatio = speedFactor * Math.min(1.0, (speed - 80) / 120);
+                if (Math.abs(steer) > 2) systemPhaseText = "In-Phase Active Rear Steering (Lane-Change Stability)";
+            } else {
+                systemPhaseText = "Transition Velocity Zone";
+            }
+
+            if (mode === 'autobahn') {
+                speedToeRear += 0.5; // Extra passive stability
+            }
+
+            let activeRearSteer = steer * rearSteerRatio;
+
+            // Total Rear Angles
+            let totalRearToe = speedToeRear + brakeToeRear;
+            let angleRL = activeRearSteer - totalRearToe;
+            let angleRR = activeRearSteer + totalRearToe;
+
+            // Apply SVG Rotations (Around exact wheel pivot points)
+            wheelFL.setAttribute('transform', `rotate(${angleFL * VISUAL_MULTIPLIER}, 160, 200)`);
+            wheelFR.setAttribute('transform', `rotate(${angleFR * VISUAL_MULTIPLIER}, 440, 200)`);
+            wheelRL.setAttribute('transform', `rotate(${angleRL * VISUAL_MULTIPLIER}, 160, 600)`);
+            wheelRR.setAttribute('transform', `rotate(${angleRR * VISUAL_MULTIPLIER}, 440, 600)`);
+
+            // Helper function to format HUD displays
+            function formatToeHUD(valElem, stateElem, angle) {
+                valElem.innerText = `${angle >= 0 ? '+' : ''}${angle.toFixed(2)}°`;
+                if (Math.abs(angle) < 0.1) {
+                    stateElem.innerText = "0.00° NEUTRAL";
+                    stateElem.style.color = "var(--text-muted)";
+                } else if (angle > 0) {
+                    stateElem.innerText = "TOE-IN / RIGHT";
+                    stateElem.style.color = "var(--accent-green)";
+                } else {
+                    stateElem.innerText = "TOE-OUT / LEFT";
+                    stateElem.style.color = "var(--accent-cyan)";
+                }
+            }
+
+            formatToeHUD(valFL, stateFL, angleFL);
+            formatToeHUD(valFR, stateFR, angleFR);
+            formatToeHUD(valRL, stateRL, angleRL);
+            formatToeHUD(valRR, stateRR, angleRR);
+
+            // Update Telemetry Log
+            telemetryLog.innerHTML = `
+                > ECU KINEMATICS STATUS: <span class="highlight">${systemPhaseText}</span><br>
+                > FRONT AXLE: FL Angle = <span class="highlight">${angleFL.toFixed(2)}°</span> | FR Angle = <span class="highlight">${angleFR.toFixed(2)}°</span> (Ackermann Ratio Active)<br>
+                > REAR AXLE: RL Angle = <span class="highlight">${angleRL.toFixed(2)}°</span> | RR Angle = <span class="highlight">${angleRR.toFixed(2)}°</span> (Dynamic Toe-In: +${totalRearToe.toFixed(2)}°)<br>
+                ${brake > 20 ? '> <span class="alert">[ACTUATOR EMERGENCY BRAKE STABILITY ACTIVE] Rear links extended for high-G braking stabilization.</span>' : '> MULTI-LINK ACTUATOR STATUS: Nominal Operation.'}
+            `;
+        }
+
+        // Event Listeners
+        inputSpeed.addEventListener('input', updateKinematics);
+        inputSteer.addEventListener('input', updateKinematics);
+        inputBrake.addEventListener('input', updateKinematics);
+        inputMode.addEventListener('change', updateKinematics);
+
+        // Initial Run
+        updateKinematics();
+    </script>
+</body>
+</html>
