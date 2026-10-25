@@ -14,8 +14,13 @@ Braking Compensation: Simulates increased rear toe-in under heavy braking to sta
 
 Multiple Drive Modes: Switch between Comfort, Sport, and Autobahn modes to alter the system's kinematic reaction logic.
 
-##  Installation
-```bash
-git clone [https://github.com/your-username/buildr.git](https://github.com/your-username/buildr.git)
-cd buildr
-npm install
+## How to Use
+This project is entirely browser-based and requires no installation, server, or dependencies.
+
+Clone this repository or download the file.
+
+Double-click the HTML file to open it in any modern web browser (Chrome, Edge, Safari, Firefox).
+
+Use the sliders in the control panel to adjust vehicle speed, steering angle, and braking force.
+
+Observe the real-time wheel geometry changes and check the live telemetry log for system status.
