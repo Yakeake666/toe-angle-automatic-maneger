@@ -13,3 +13,9 @@ Active Rear Steering: Simulates counter-phase steering at low speeds for tight t
 Braking Compensation: Simulates increased rear toe-in under heavy braking to stabilize the chassis.
 
 Multiple Drive Modes: Switch between Comfort, Sport, and Autobahn modes to alter the system's kinematic reaction logic.
+
+##  Installation
+```bash
+git clone [https://github.com/your-username/buildr.git](https://github.com/your-username/buildr.git)
+cd buildr
+npm install
