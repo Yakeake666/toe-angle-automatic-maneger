@@ -1,5 +1,5 @@
 # Active Toe Kinematics Simulator
-A 2D interactive simulator demonstrating a real-time dynamic multi-link wheel geometry control system. This tool visualizes how advanced electronic suspension systems actively adjust wheel toe angles based on driving conditions to improve vehicle stability and agility. Most cars' toeangle can only be adjusted in the factory. However, adjusting the toe according to the road condition is effective for cars to drive more stably and more safely. For htis reason, I made this app.
+A 2D interactive simulator demonstrating a real-time dynamic multi-link wheel geometry control system. This tool visualizes how advanced electronic suspension systems actively adjust wheel toe angles based on driving conditions to improve vehicle stability and agility. Most modern cars use multi-link suspension, allowing the tires to be adjusted to different angles. Most cars' toeangle can only be adjusted in the factory. However, adjusting the toe according to the road condition is effective for cars to drive more stably and more safely. For htis reason, I made this app.
 
 ## Features
 Real-Time X-Ray Visualization: A top-down translucent chassis view highlighting the active multi-link suspension actuators.
